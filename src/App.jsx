@@ -9,9 +9,19 @@ const CIRCUMFERENCE = 2 * Math.PI * 34; // radius = 34
 function App() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'success'
   const [countdown, setCountdown] = useState(COUNTDOWN_FROM);
   const timerRef = useRef(null);
+
+  const validatePhone = (value) => {
+    if (!value.trim()) return '';
+    // Must start with + followed by at least one digit
+    if (!/^\+\d/.test(value.trim())) {
+      return 'Please include a country code (e.g. +60, +1, +66)';
+    }
+    return '';
+  };
 
   useEffect(() => {
     if (status === 'success') {
@@ -34,12 +44,15 @@ function App() {
   const resetForm = () => {
     setName('');
     setPhone('');
+    setPhoneError('');
     setStatus('idle');
     setCountdown(COUNTDOWN_FROM);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const error = validatePhone(phone);
+    if (error) { setPhoneError(error); return; }
     if (!name.trim() || !phone.trim()) return;
     setStatus('loading');
     try {
@@ -60,7 +73,7 @@ function App() {
   const progress = countdown / COUNTDOWN_FROM;
   const dashOffset = CIRCUMFERENCE * (1 - progress);
 
-  const isFormValid = name.trim().length > 0 && phone.trim().length > 0;
+  const isFormValid = name.trim().length > 0 && phone.trim().length > 0 && !validatePhone(phone);
 
   return (
     <>
@@ -168,11 +181,34 @@ function App() {
                       className="field-input"
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setPhoneError(validatePhone(e.target.value));
+                      }}
+                      onBlur={(e) => setPhoneError(validatePhone(e.target.value))}
                       placeholder="e.g. +60 12-345 6789"
                       required
+                      style={phoneError ? { borderColor: 'rgba(239,68,68,0.7)', boxShadow: '0 0 0 3px rgba(239,68,68,0.15)' } : {}}
                     />
                   </div>
+                  {phoneError && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.25)',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: '#fca5a5',
+                      fontWeight: 500,
+                    }}>
+                      <span style={{ fontSize: '14px' }}>⚠️</span>
+                      {phoneError}
+                    </div>
+                  )}
                 </div>
 
                 <button
