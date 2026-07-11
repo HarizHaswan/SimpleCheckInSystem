@@ -1,162 +1,313 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
-import { CheckCircle2, User, Phone, Loader2, Sparkles } from 'lucide-react';
+import { User, Phone, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+
+const COUNTDOWN_FROM = 3;
+const CIRCUMFERENCE = 2 * Math.PI * 34; // radius = 34
 
 function App() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'success'
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(COUNTDOWN_FROM);
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    let timer;
     if (status === 'success') {
-      timer = setInterval(() => {
+      setCountdown(COUNTDOWN_FROM);
+      timerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
+            clearInterval(timerRef.current);
             resetForm();
-            return 5;
+            return COUNTDOWN_FROM;
           }
           return prev - 1;
         });
       }, 1000);
     }
-    return () => clearInterval(timer);
+    return () => clearInterval(timerRef.current);
   }, [status]);
 
   const resetForm = () => {
     setName('');
     setPhone('');
     setStatus('idle');
-    setCountdown(5);
+    setCountdown(COUNTDOWN_FROM);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) return;
-
     setStatus('loading');
-
     try {
-      // Attempt to save to Firebase
       await addDoc(collection(db, 'checkins'), {
         name,
         phone,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
       });
-    } catch (error) {
-      console.error("Firebase error (expected if using placeholders):", error);
-      // We continue to 'success' state even on error so you can test the UI 
-      // without needing real Firebase credentials immediately.
+    } catch (err) {
+      console.error('Firebase error:', err);
     }
-
     setStatus('success');
   };
 
+  const twoNames = name.split(' ').slice(0, 2).join(' ');
+
+  // Ring progress: goes from full to empty over COUNTDOWN_FROM seconds
+  const progress = countdown / COUNTDOWN_FROM;
+  const dashOffset = CIRCUMFERENCE * (1 - progress);
+
+  const isFormValid = name.trim().length > 0 && phone.trim().length > 0;
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-
-        {/* Main Card Container */}
-        <div className="bg-slate-800 rounded-3xl shadow-2xl p-8 border border-slate-700/50 relative overflow-hidden backdrop-blur-sm">
-
-          {/* Subtle gradient background effect */}
-          <div className="absolute -top-32 -right-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-          <div className="relative z-10 min-h-[320px] flex flex-col justify-center">
-
-            {status === 'idle' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl mb-4">
-                    <Sparkles className="w-6 h-6" />
-                  </div>
-                  <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Event Check-In</h1>
-                  <p className="text-slate-400">Please enter your details to join</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5 ml-1">Full Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
-                        <User className="h-5 w-5" />
-                      </div>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="block w-full pl-11 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-white placeholder-slate-500 outline-none"
-                        placeholder="John Doe"
-                        required
-                        disabled={status !== 'idle'}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5 ml-1">Phone Number</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
-                        <Phone className="h-5 w-5" />
-                      </div>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="block w-full pl-11 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-white placeholder-slate-500 outline-none"
-                        placeholder="+1 (555) 000-0000"
-                        required
-                        disabled={status !== 'idle'}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={!name.trim() || !phone.trim() || status !== 'idle'}
-                    className="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Check In Now
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {status === 'loading' && (
-              <div className="animate-in fade-in duration-300 flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-                <p className="text-slate-400 font-medium animate-pulse">Saving your details...</p>
-              </div>
-            )}
-
-            {status === 'success' && (
-              <div className="animate-in zoom-in-95 fade-in duration-500 flex flex-col items-center justify-center py-8 text-center">
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse"></div>
-                  <CheckCircle2 className="w-24 h-24 text-emerald-500 relative z-10" />
-                </div>
-
-                <h2 className="text-3xl font-bold text-white mb-2">You're checked in ✅</h2>
-                <p className="text-slate-300 mb-8">Welcome to the event, {name.split(' ').slice(0, 2).join(' ')}!</p>
-
-                <div className="flex flex-col items-center justify-center">
-                  <div className="text-4xl font-bold text-emerald-400 font-mono mb-2">
-                    {countdown}
-                  </div>
-                  <div className="text-sm text-slate-500 uppercase tracking-widest font-medium">
-                    Resetting
-                  </div>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
+    <>
+      {/* Background scene */}
+      <div className="bg-scene">
+        <div className="bg-orb bg-orb-1" />
+        <div className="bg-orb bg-orb-2" />
+        <div className="bg-orb bg-orb-3" />
       </div>
-    </div>
+      <div className="bg-grid" />
+
+      {/* Main layout */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+        }}
+      >
+        {/* Brand header */}
+        <div style={{ marginBottom: '32px', textAlign: 'center', animation: 'fadeSlideDown 0.5s ease both' }}>
+          <div className="badge" style={{ marginBottom: '16px' }}>
+            <span className="dot-live" />
+            Live Event
+          </div>
+          <h1
+            style={{
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 'clamp(28px, 5vw, 42px)',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.55) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            Guest Check-In
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '14px', marginTop: '6px' }}>
+            Register your attendance below
+          </p>
+        </div>
+
+        {/* Card */}
+        <div className="card" style={{ width: '100%', maxWidth: '420px' }}>
+
+          {/* ── IDLE: Form ── */}
+          {status === 'idle' && (
+            <div className="animate-fade-slide-up" style={{ padding: '40px 36px' }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                {/* Name */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.4)',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    Full Name
+                  </label>
+                  <div className="field-wrapper" style={{ position: 'relative' }}>
+                    <User className="field-icon" size={16} />
+                    <input
+                      className="field-input"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Sarah Johnson"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.4)',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    Phone Number
+                  </label>
+                  <div className="field-wrapper" style={{ position: 'relative' }}>
+                    <Phone className="field-icon" size={16} />
+                    <input
+                      className="field-input"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="e.g. +60 12-345 6789"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={!isFormValid}
+                  style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  Check In
+                  <ArrowRight size={16} />
+                </button>
+              </form>
+
+              <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.18)', marginTop: '24px' }}>
+                Your data is stored securely
+              </p>
+            </div>
+          )}
+
+          {/* ── LOADING ── */}
+          {status === 'loading' && (
+            <div
+              style={{
+                padding: '64px 36px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px',
+                animation: 'zoomIn 0.3s ease both',
+              }}
+            >
+              <Loader2 className="loader-spin" size={40} color="rgba(139,92,246,0.9)" />
+              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                Saving your details…
+              </p>
+            </div>
+          )}
+
+          {/* ── SUCCESS ── */}
+          {status === 'success' && (
+            <div
+              className="animate-zoom-in"
+              style={{
+                padding: '48px 36px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+              }}
+            >
+              {/* Check icon with glow */}
+              <div
+                className="animate-check-glow"
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #7c3aed22, #4f46e522)',
+                  border: '1.5px solid rgba(139,92,246,0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '20px',
+                }}
+              >
+                <CheckCircle2 size={34} color="#a78bfa" strokeWidth={1.8} />
+              </div>
+
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: '#a78bfa',
+                  marginBottom: '10px',
+                }}
+              >
+                Checked In ✓
+              </div>
+
+              <h2
+                style={{
+                  fontFamily: "'Syne', sans-serif",
+                  fontSize: '28px',
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                  color: '#fff',
+                  marginBottom: '8px',
+                }}
+              >
+                Welcome, {twoNames}!
+              </h2>
+
+              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.35)', marginBottom: '36px' }}>
+                You're all set. Enjoy the event 🎉
+              </p>
+
+              {/* Countdown ring */}
+              <div className="ring-container">
+                <svg className="ring-svg">
+                  <defs>
+                    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#7c3aed" />
+                      <stop offset="100%" stopColor="#4f46e5" />
+                    </linearGradient>
+                  </defs>
+                  <circle className="ring-track" cx="40" cy="40" r="34" />
+                  <circle
+                    className="ring-progress"
+                    cx="40"
+                    cy="40"
+                    r="34"
+                    strokeDasharray={CIRCUMFERENCE}
+                    strokeDashoffset={dashOffset}
+                  />
+                </svg>
+                <div className="ring-number" style={{ color: '#a78bfa' }}>
+                  {countdown}
+                </div>
+              </div>
+
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', marginTop: '12px', letterSpacing: '0.04em' }}>
+                Next guest in {countdown}s
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <p style={{ marginTop: '28px', fontSize: '12px', color: 'rgba(255,255,255,0.15)' }}>
+          Powered by Firebase &amp; React
+        </p>
+      </div>
+    </>
   );
 }
 
