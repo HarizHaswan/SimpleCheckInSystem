@@ -92,7 +92,7 @@ function App() {
           </div>
           <h1
             style={{
-              fontFamily: "'Syne', sans-serif",
+              fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: 'clamp(28px, 5vw, 42px)',
               fontWeight: 800,
               letterSpacing: '-0.02em',
@@ -255,7 +255,7 @@ function App() {
 
               <h2
                 style={{
-                  fontFamily: "'Syne', sans-serif",
+                  fontFamily: "'Inter', system-ui, sans-serif",
                   fontSize: '28px',
                   fontWeight: 800,
                   letterSpacing: '-0.02em',
