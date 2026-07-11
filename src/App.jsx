@@ -304,7 +304,7 @@ function App() {
 
         {/* Footer */}
         <p style={{ marginTop: '28px', fontSize: '12px', color: 'rgba(255,255,255,0.15)' }}>
-          Powered by Firebase &amp; React
+          Build with Firebase &amp; React by Muhammad Hariz &amp; Powered by Google Antigravity.
         </p>
       </div>
     </>
