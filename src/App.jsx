@@ -140,7 +140,7 @@ function App() {
                 </div>
 
                 <h2 className="text-3xl font-bold text-white mb-2">You're checked in ✅</h2>
-                <p className="text-slate-300 mb-8">Welcome to the event, {name.split(' ')[0]}!</p>
+                <p className="text-slate-300 mb-8">Welcome to the event, {name.split(' ').slice(0, 2).join(' ')}!</p>
 
                 <div className="flex flex-col items-center justify-center">
                   <div className="text-4xl font-bold text-emerald-400 font-mono mb-2">
