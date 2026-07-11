@@ -18,12 +18,13 @@ function App() {
       setCountdown(COUNTDOWN_FROM);
       timerRef.current = setInterval(() => {
         setCountdown((prev) => {
-          if (prev <= 1) {
+          const next = prev - 1;
+          if (next <= 0) {
             clearInterval(timerRef.current);
-            resetForm();
-            return COUNTDOWN_FROM;
+            setTimeout(resetForm, 800); // show 0 briefly, then reset
+            return 0;
           }
-          return prev - 1;
+          return next;
         });
       }, 1000);
     }
@@ -272,8 +273,8 @@ function App() {
               </p>
 
               {/* Countdown ring */}
-              <div className="ring-container">
-                <svg className="ring-svg">
+              <div className="ring-container" style={{ margin: '0 auto' }}>
+                <svg className="ring-svg" viewBox="0 0 80 80">
                   <defs>
                     <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#7c3aed" />
