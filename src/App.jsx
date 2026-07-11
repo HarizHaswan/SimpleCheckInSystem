@@ -3,7 +3,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { User, Phone, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 
-const COUNTDOWN_FROM = 3;
+const COUNTDOWN_FROM = 5;
 const CIRCUMFERENCE = 2 * Math.PI * 34; // radius = 34
 
 function App() {
